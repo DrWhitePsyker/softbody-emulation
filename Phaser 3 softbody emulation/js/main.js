@@ -22,20 +22,22 @@ var config = {
 var game = new Phaser.Game(config);
 
 function create(){
+	var graphics = this.add.graphics({ lineStyle: { width: 2, color: 0xaa0000 }, fillStyle: { color: 0x0000aa } });
+	
 	Grid = softBodyManager.createNewGrid(5,5,100);
-	softBodyManager.drawGrid(Grid,0,0,10,this)
+	softBodyManager.drawGrid(Grid,0,0,10,this,graphics)
 	points = softBodyManager.CalcPolygon(Grid,0,0,25,this)
-	console.log(points);
-	softBodyManager.drawPolygon(points,this)
+	//console.log(points);
+	softBodyManager.drawPolygon(points,this,graphics)
+	//createbody (this needs to create a matter physics object using the vertices. 
 	
 	for(var i = 0; i < 6; i++ ){
-	softBodyManager.removeCell(Grid,Phaser.Math.Between(0,4),Phaser.Math.Between(0,4))
-	softBodyManager.drawGrid(Grid,100+100*i,0,10,this)
+	//softBodyManager.removeCell(Grid,Phaser.Math.Between(0,4),Phaser.Math.Between(0,4))
+	softBodyManager.drawGrid(Grid,100+100*i,0,10,this,graphics)
 	points = softBodyManager.CalcPolygon(Grid,0,0,25,this)
-	console.log(points);
+	//console.log(points);
+	softBodyManager.drawPolygon(points,this,graphics)
 	}
-	
-	
 	
 	
 }

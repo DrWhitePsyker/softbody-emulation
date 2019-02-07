@@ -21,9 +21,7 @@ static removeCell(grid,x,y){  //marks a cell as 'dead', effectively removing it 
 	return grid;
 }
 
-
-static drawGrid(grid,x,y,cellsize,context){ //draw a 2D array cube on screen at set point with cells being a set size
-	var graphics = context.add.graphics({ lineStyle: { width: 2, color: 0xaa0000 }, fillStyle: { color: 0x0000aa } });	
+static drawGrid(grid,x,y,cellsize,context,graphics){ //draw a 2D array cube on screen at set point with cells being a set size
 	var width = grid.length	
 	var height = grid[1].length
 	for ( var i = 0; i < width; i++ ) { //step through each line
@@ -40,13 +38,6 @@ static CalcPolygon(grid,x,y,cellsize,context){
 	var width = grid.length	
 	var height = grid[1].length
 	var polygons = []
-
-	var polysort = [[]]
-	var polyDistCalc = 0;
-	var polyShortestDist = 0;
-	var polyID = 0;
-	var polySwitch = false;
-	
 	var point = [];
 	var scanpointX = 0;
 	var scanpointY = 0;
@@ -97,111 +88,71 @@ static CalcPolygon(grid,x,y,cellsize,context){
 		}
 	}
 	
-	//sorting the polygon array to be cleanly rendered.
-	
-	polysort[0][0] = polygons[0][0]
-	polysort[0][1] = polygons[0][1]
-	polygons.shift();
-	var polyStep = 0;
-	
+	//sorting algo
+
+	// Array of points;
+	const points = []
 	for(var i = 0; i < polygons.length; i++ ){
-		if(polySwitch == false){//checking against first axis
-			for(var j = 1; j < polygons.length; j++ ){
-				polyDistCalc = polysort[polyStep]
-				polyDistCalc -= polygons[j][0]
-				polyDistCalc = Math.abs(polyDistCalc)
-				if(j == 0){
-					var polyShortestDist = polyDistCalc;
-				}
-				if(polyShortestDist < polyDistCalc){
-					polyShortestDist = polyDistCalc;
-					polyID = j;
-				}
-			}
-		}
-		
-		if(polySwitch == true){//checking against second axis
-			for(var j = 1; j < polygons.length; j++ ){
-				polyDistCalc = polysort[polyStep][1] 
-				polyDistCalc -= polygons[j][1]
-				polyDistCalc = Math.abs(polyDistCalc)
-				if(j == 0){
-					var polyShortestDist = polyDistCalc;
-				}
-				if(polyShortestDist < polyDistCalc){
-					polyShortestDist = polyDistCalc;
-					polyID = j;
-				}
-			}
-		}
-		
-	polysort[polyStep] = polygons[polyID]
-	polysort[polyStep][1] = polygons[polyID][0]
-	polygons.splice(polyID,1);
-	polySwitch != polySwitch	
-	polyStep++
-	i--
-	}
+	points.push({x:polygons[i][0],y:polygons[i][1]})
+	}	
+	console.log(points);
 	
-	return polysort;
+	// Find min max to get center
+	// Sort from top to bottom
+	points.sort((a,b)=>a.y - b.y);
+
+	// Get center y
+	const cy = (points[0].y + points[points.length -1].y) / 2;
+
+	// Sort from right to left
+	points.sort((a,b)=>b.x - a.x);
+
+	// Get center x
+	const cx = (points[0].x + points[points.length -1].x) / 2;
+
+	// Center point
+	const center = {x:cx,y:cy};
+
+	// Pre calculate the angles as it will be slow in the sort
+	// As the points are sorted from right to left the first point
+	// is the rightmost
+
+	// Starting angle used to reference other angles
+	var startAng;
+	points.forEach(point => {
+		var ang = Math.atan2(point.y - center.y,point.x - center.x);
+		if(!startAng){ startAng = ang }
+		else {
+			 if(ang < startAng){  // ensure that all points are clockwise of the start point
+				 ang += Math.PI * 2;
+			 }
+		}
+		point.angle = ang; // add the angle to the point
+	 });
+
+
+	 // Sort clockwise;
+	 points.sort((a,b)=> a.angle - b.angle);
 	
+	return points;
+	
+	//https://stackoverflow.com/questions/45660743/sort-points-in-counter-clockwise-in-javascript
 	//https://stackoverflow.com/questions/13746284/merging-multiple-adjacent-rectangles-into-one-polygon
 }
 
-static drawPolygon(points,context){ //draw a 2D array cube on screen at set point with cells being a set size
-	var graphics = context.add.graphics({ lineStyle: { width: 2, color: 0xaa0000 }, fillStyle: { color: 0x0000aa } });
-	graphics.fillStyle(0xffff00, 1);
+static drawPolygon(points,context,graphics){ //draw a 2D array cube on screen at set point with cells being a set size
 	graphics.beginPath();
-	for(var i = 0; i < points.length; i++ ){
-		graphics.lineTo(points[i][0], points[i][1]);
+	graphics.moveTo(points[0][0], points[0][1]);
+	for(var i = 1; i < points.length; i++ ){
+		graphics.lineTo(points[i][0],points[i][1]);
 	}
 	graphics.closePath();
 	graphics.fillPath();
 }
 
 static gridClean(grid){
-	var width = grid.length	
-	var height = grid[1].length
-
-	var outerface = 0;
-	for ( var i = 0; i < width; i++ ) { //step through each line
-		for ( var j = 0; j < height; j++ ) {
-			if(grid[i][j] <= 0){ //checking dead cells and its adjecents
-				if(i+1 < width){
-					if(grid[i+1][j] < 1)
-					{
-						outerface++
-					}
-				}
-				
-				if(i-1 > -1){
-					if(grid[i-1][j] < 1)
-					{
-						outerface++;
-					}
-				}
-				
-				if(j+1 < length){
-					if(grid[i][j+1] < 1)
-					{
-						outerface++
-					}
-				}
-				
-				if(j-1 > -1){
-					if(grid[i][j-1] < 1)
-					{
-						outerface++
-					}
-				}
-				
-				if(outerface == 4){
-					grid[i][j] = 100;
-				}
-			}
-		}				
-	}
-	return grid;
+	//TODO//
+	//IT NEEDS TO MAKE CELLS REXIST IF THEY HAVE 4 NEIGHBOURS
 }
 
 
